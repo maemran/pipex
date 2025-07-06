@@ -6,7 +6,7 @@
 /*   By: maemran < maemran@student.42amman.com>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/06 14:13:07 by maemran           #+#    #+#             */
-/*   Updated: 2025/07/06 15:11:17 by maemran          ###   ########.fr       */
+/*   Updated: 2025/07/06 21:12:14 by maemran          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,7 +15,11 @@
 
 #include <unistd.h>
 #include <stdlib.h>
+#include <fcntl.h>
 #include "./libft/libft.h"
+
+#define SUCCESS 0
+#define FAILURE 1
 
 typedef struct s_data
 {
