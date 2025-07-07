@@ -6,11 +6,11 @@
 /*   By: maemran < maemran@student.42amman.com>     +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/07/06 14:12:17 by maemran           #+#    #+#             */
-/*   Updated: 2025/07/06 21:41:16 by maemran          ###   ########.fr       */
+/*   Updated: 2025/07/07 12:51:56 by maemran          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "pipex.h"
+#include "../include/pipex.h"
 
 int     pipes_init(t_data *data)
 {
@@ -19,10 +19,7 @@ int     pipes_init(t_data *data)
     i = 0;
     data->fd = malloc(sizeof(int *) * (data->cmds_num));
     if (!data->fd)
-    {
-        write(2, "Error: Memory allocation failed.\n", 34);
-        return (FAILURE);
-    }
+        return (failure("Error: Memory allocation failed.\n"));
     while (i < data->cmds_num - 1)
     {
         data->fd[i] = malloc(sizeof(int) * 2);/////
@@ -37,24 +34,7 @@ int     pipes_init(t_data *data)
     return (SUCCESS);
 }
 
-char    *path_cmd_join(t_data *data, int i, char *path)
-{
-    //ls // /usr/bin/ls  /usr/bin/   /bin/
-    char *str;
-    char *new_cmd;
-
-    str = ft_strjoin("/", data->cmds[i]);
-    if (!str)
-    {
-        write(2, "Error: Memory allocation failed.\n", 34);
-        return (NULL);
-    }
-    new_cmd = ft_strjoin(path, str);
-    free(str);
-    return (new_cmd);
-}
-
-int prepare_path(char **env, t_data *data)
+int prepare_path(char **env, t_data *data)// OK
 {
     int i;
     char *path_env;
@@ -67,10 +47,7 @@ int prepare_path(char **env, t_data *data)
             path_env = env[i] + 5;
             data->paths = ft_split(path_env, ':');
             if (!data->paths)
-            {
-                write(2, "Error: Memory allocation failed.\n", 34);
-                return (FAILURE);
-            }
+                return (failure("Error: Memory allocation failed.\n"));
             return (SUCCESS);
         }
         i++;
@@ -78,7 +55,7 @@ int prepare_path(char **env, t_data *data)
     return (SUCCESS);
 }
 
-int absolute_path_executer(t_data *data, int i)
+int absolute_path_executer(t_data *data, int i)//OK
 {
     int length;
     char *new_cmd;
@@ -88,10 +65,7 @@ int absolute_path_executer(t_data *data, int i)
     {
         new_cmd = path_cmd_join(data, i, data->paths[length]);
         if (!new_cmd)
-        {
-            write(2, "Error: Memory allocation failed.\n", 34);
             return (FAILURE);
-        }
         if (access(new_cmd, X_OK) == 0)
             execve(new_cmd, data->cmd_args[i], NULL);
         free(new_cmd);
@@ -100,7 +74,7 @@ int absolute_path_executer(t_data *data, int i)
     return (SUCCESS);
 }
 
-int relative_path_executer(t_data *data, int i)
+int relative_path_executer(t_data *data, int i)//OK
 {
     if (ft_strncmp(data->cmds[i], "./", 2) == 0 || 
         ft_strncmp(data->cmds[i], "../", 3) == 0 || 
@@ -112,18 +86,16 @@ int relative_path_executer(t_data *data, int i)
     return (SUCCESS);
 }
 
-int redirection(t_data *data, int i)
+void wait_process(t_data *data)//OK
 {
-    if (i == 0)
-       dup2 (data->infile, STDIN_FILENO);
-    if (i == data->cmds_num - 1)
-        dup2(data->outfile, STDOUT_FILENO);
-    if (i != 0)
-        dup2(data->fd[i - 1][0], STDIN_FILENO);
-    if (i == data->cmds_num - 1)
-        dup2(data->fd[i][1], STDOUT_FILENO);
-    //close files 
-    return (SUCCESS);
+    int i;
+
+    i = 0;
+    while (i < data->cmds_num)
+    {
+        wait(NULL);
+        i++;
+    }
 }
 
 int executer(t_data *data)
@@ -137,63 +109,24 @@ int executer(t_data *data)
         id = fork();
         if (id == 0)
         {
-            redirection(data);
+            if (redirection(data, i))
+                exit (1);
             relative_path_executer(data, i);
-            absolute_path_executer(data, i);
+            if (absolute_path_executer(data, i))//free mem allocation
+                exit (1);
         }
+        if (id != 0)
+        {
+            if (i != 0)
+                close(data->fd[i - 1][0]);
+            if (i != data->cmds_num - 1)
+                close(data->fd[i][1]);
+        }
+        i++;
     }
-    
-}
-
-int open_infile(t_data *data, char *infile)
-{
-    data->infile = open(infile, O_RDONLY);
-    if (data->infile < 0)
-    {
-        write(2, "Error: Unable to open infile.\n", 30);
-        return (FAILURE);
-    }
-    if (access(infile, R_OK) != 0)
-    {
-        close(data->infile);
-        write(2, "Error: No read permission for infile.\n", 38);
-        return (FAILURE);
-    }
-    if (access(infile, R_OK) != 0)
-    {
-        close(data->infile);
-        write(2, "Error: No read permission for infile.\n", 38);
-        return (FAILURE);
-    }
-    return (SUCCESS);
-}
-
-int open_outfile(t_data *data, char *outfile)
-{
-    data->outfile = open(outfile, O_WRONLY | O_CREAT | O_TRUNC, 0777);
-    if (data->outfile < 0)
-    {
-        write(2, "Error: Unable to open outfile.\n", 31);
-        return (FAILURE);
-    }
-    if (access(outfile, W_OK) != 0)
-    {
-        close(data->outfile);
-        write(2, "Error: No write permission for outfile.\n", 39);
-        return (FAILURE);
-    }
-    return (SUCCESS);
-}
-
-int io_files(t_data *data, char *infile, char *outfile)
-{
-    if (open_infile(data, infile) == FAILURE)
-        return (FAILURE);
-    if (open_outfile(data, outfile) == FAILURE)
-    {
-        close(data->infile);
-        return (FAILURE);
-    }
+    close(data->infile);
+    close(data->outfile);
+    wait_process(data);
     return (SUCCESS);
 }
 
@@ -202,6 +135,7 @@ int fill_args(int argc, char **argv, char **env, t_data *data)
     int i;
 
     i = 0;
+    (void)env;
     data->cmd_args = malloc(sizeof(char **) * (data->cmds_num + 1));////
     data->cmds = malloc(sizeof(char *) * (data->cmds_num + 1));////
     while (i < data->cmds_num)// 0 executable 1 infile 2 cmd
@@ -225,7 +159,7 @@ int fill_args(int argc, char **argv, char **env, t_data *data)
     data->cmd_args[i] = NULL;
     data->cmds[i] = NULL;
     io_files(data, argv[1], argv[argc - 1]);
-    return (0);
+    return (SUCCESS);
 }
 
 int    main(int argc, char **argv, char **env)
@@ -241,5 +175,7 @@ int    main(int argc, char **argv, char **env)
     data->cmds_num = argc - 3;
     fill_args(argc, argv, env, data);
     prepare_path(env, data);
+    pipes_init(data);
+    executer(data);
     return (0);
 }

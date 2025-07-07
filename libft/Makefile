@@ -28,29 +28,19 @@ WHITE =  \033[37m
 RESET = \033[0m
 
 $(NAME): $(OBJS)
-	@echo "$(BOLD)$(GREEN)Creating $(NAME)$(RESET)"
-	@ar rcs $(NAME) $(OBJS)
-	@echo "$(BOLD)$(GREEN)$(NAME) created!$(RESET)"
+	ar rcs $(NAME) $(OBJS)
 
 %.o: %.c
-	@echo "$(BOLD)$(CYAN)Compiling $<$(RESET)"
-	@$(CC) $(CFLAGS) -c $< -o $@
-	@echo "$(BOLD)$(RED)Compilation of $< done!$(RESET)"
+	$(CC) $(CFLAGS) -c $< -o $@
 
 bonus : $(OBJS) $(OBJ_B)
-	@echo "$(BOLD)$(GREEN)Creating $(NAME)$(RESET)"
-	@ar rcs $(NAME) $(OBJ_B) $(OBJS)
-	@echo "$(BOLD)$(GREEN)$(NAME) created!$(RESET)"
+	ar rcs $(NAME) $(OBJ_B) $(OBJS)
 
 clean:
-	@echo "$(BOLD)$(RED)Cleaning up...$(RESET)"
-	@rm -f $(OBJS) $(OBJ_B)
-	@echo "$(BOLD)$(RED)Cleaned up!$(RESET)"
+	rm -f $(OBJS) $(OBJ_B)
 
 fclean: clean
-	@echo "$(BOLD)$(RED)Removing $(NAME)...$(RESET)"
-	@rm -f $(NAME)
-	@echo "$(BOLD)$(RED)$(NAME) removed!$(RESET)"
+	rm -f $(NAME)
 
 re: fclean all
 
